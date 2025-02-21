@@ -38,7 +38,7 @@ class DiscordRPC:
                     start=start_time,
                     end=end_time,
                     buttons=[
-                        {"label": "rahh", "url": "https://github.com/svxf/music_presence"}]
+                        {"label": "rahh", "url": "https://github.com/svxf/MusicPresence"}]
                 )
             else:
                 self.rpc.update(
