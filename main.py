@@ -1,6 +1,8 @@
 import app_manager, os
 from dotenv import load_dotenv
 
+load_dotenv()
+
 if __name__ == "__main__":
     spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
     spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
