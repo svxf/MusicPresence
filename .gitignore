@@ -1,0 +1,6 @@
+pypresence
+spotipy
+.env
+config.json
+.cache
+__pycache__
