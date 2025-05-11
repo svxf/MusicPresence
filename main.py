@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import app_manager, os
 from dotenv import load_dotenv
 

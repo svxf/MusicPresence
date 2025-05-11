@@ -1,4 +1,7 @@
-import requests, re, json
+import requests
+import re
+import json
+import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -7,7 +10,11 @@ def load_config(filename):
         config = json.load(file)
     return config['ignore_words'], config['blacklist_words'], config['full_blacklisted']
 
-ignore_words, blacklist_words, full_blacklisted = load_config('config.json')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, 'config.json')
+cache_path = os.path.join(script_dir, ".cache")
+
+ignore_words, blacklist_words, full_blacklisted = load_config(config_path)
 
 def should_ignore(name):
     """ checks if the name contains any ignored words """
@@ -50,26 +57,6 @@ def clean_track_title(title):
 
     return title.strip()
 
-# def get_actual_artist(api_key, api_url, track_name):
-#     params = {
-#         'method': 'track.search',
-#         'track': track_name,
-#         'api_key': api_key,
-#         'format': 'json'
-#     }
-#     response = requests.get(api_url, params=params)
-#     data = response.json()
-
-#     print("\n\n")
-#     print(track_name)
-
-#     if 'results' in data and 'trackmatches' in data['results']:
-#         tracks = data['results']['trackmatches']['track']
-#         if tracks:
-#             print(tracks[0]['artist'])
-#             return tracks[0]['artist']
-#     return "Unknown Artist"
-
 class SpotifyClient:
     def __init__(self, client_id, client_secret, redirect_uri, lastfm_api_key, lastfm_api_url, debug):
         self.sp = spotipy.Spotify(
@@ -77,7 +64,8 @@ class SpotifyClient:
                 client_id=client_id,
                 client_secret=client_secret,
                 redirect_uri=redirect_uri,
-                scope="user-read-playback-state playlist-modify-private playlist-read-private"
+                scope="user-read-playback-state playlist-modify-private playlist-read-private",
+                cache_path=cache_path
             )
         )
         self.lastfm_api_key = lastfm_api_key
