@@ -35,6 +35,21 @@ def clean_name(name):
         name = re.sub(re.escape(word), "", name, flags=re.IGNORECASE)
     return " ".join(name.split())
 
+def clean_track_title(title):
+    """ cleans up track titles """
+    title = re.sub(r'yt1s\.com\s*-\s*', '', title, flags=re.IGNORECASE)
+
+    match = re.search(r'sings\s*["\'!](.+?)["\'!]', title, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    if 'sings' in title:
+        title = title.split('sings', 1)[1].strip()
+
+    title = re.split(r'\s+by\s+', title, flags=re.IGNORECASE)[0]
+
+    return title.strip()
+
 # def get_actual_artist(api_key, api_url, track_name):
 #     params = {
 #         'method': 'track.search',
@@ -71,6 +86,10 @@ class SpotifyClient:
         self.lastfm_cache = {}
         self.debug = debug
 
+        self.artist_corrections = {
+            "LIL PEEP": "Owl City",
+        }
+
     def get_actual_artist(self, track_name):
         """ fetches the correct artist name from Last.fm """
         if track_name in self.lastfm_cache:
@@ -91,6 +110,12 @@ class SpotifyClient:
             tracks = data['results']['trackmatches']['track']
             if tracks:
                 artist_name = tracks[0]['artist']
+
+                if artist_name in self.artist_corrections:
+                    if self.debug:
+                        print(f"Correcting artist: {artist_name} -> {self.artist_corrections[artist_name]}")
+                    artist_name = self.artist_corrections[artist_name]
+                
                 self.lastfm_cache[track_name] = artist_name
                 if self.debug:
                     print(f"Caching artist for {track_name}: {artist_name}")
@@ -109,6 +134,8 @@ class SpotifyClient:
                 track_name = track["name"]
                 artist_name = ", ".join(artist["name"] for artist in track["artists"])
                 album_name = track["album"]["name"]
+                
+                track_url = None
 
                 album_cover = None
                 if track["album"]["images"]:
@@ -120,6 +147,8 @@ class SpotifyClient:
                 if self.debug:
                     print("\n-----")
                     print(f"tn: {track_name} | an: {artist_name} | abn: {album_name}")
+
+                track_name = clean_track_title(track_name)
 
                 if should_ignore(track_name):
                     track_name = clean_name(track_name)
@@ -151,6 +180,8 @@ class SpotifyClient:
                             album_cover = search_result['tracks']['items'][0]['album']['images'][0]['url']
                         else:
                             album_cover = "https://i.imgur.com/y8qHKbD.png" # default spotify logo
+                    else:
+                        track_url = track["external_urls"]["spotify"]
                     if album_cover:
                         print(f"Got album cover: {album_cover}")
                         self.album_cover_cache[song_id] = album_cover
@@ -169,6 +200,7 @@ class SpotifyClient:
 
                 return {
                     "track_name": track_name,
+                    "track_url": track_url,
                     "artist_name": artist_name,
                     "album_name": album_name,
                     "album_cover": album_cover,
@@ -177,5 +209,5 @@ class SpotifyClient:
                     "is_playing": is_playing
                 }
         except Exception as e:
-            print(f"Error fetching song: {e}")
+            print(f"[Spotify] Error fetching song: {e}")
         return None
