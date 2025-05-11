@@ -6,7 +6,7 @@ from PIL import Image
 class TrayIcon:
     def __init__(self, app_manager):
         self.app_manager = app_manager
-        self.icon = Icon("musice presence")
+        self.icon = Icon("music presence")
         self.playing = True
         self.current_song = "Not Playing"
 
@@ -24,6 +24,11 @@ class TrayIcon:
     def toggle_playing(self, icon, item):
         self.playing = not self.playing
         self.app_manager.running = self.playing
+        if not self.playing:
+            self.app_manager.discord_rpc.clear_status()
+        else:
+            if self.app_manager.previousSong:
+                self.app_manager.discord_rpc.update_status(self.app_manager.previousSong)
 
     def stop_app(self, icon, item):
         self.app_manager.stop()

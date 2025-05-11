@@ -1,5 +1,6 @@
 import time
 from pypresence import Presence, ActivityType
+from pypresence.exceptions import InvalidID, PipeClosed, DiscordNotFound
 
 class DiscordRPC:
     def __init__(self, client_id):
@@ -7,7 +8,29 @@ class DiscordRPC:
         self.rpc = Presence(client_id)
         self.rpc.connect()
 
-    def update_status(self, track_info):
+    def connect(self):
+        try:
+            self.rpc = Presence(self.client_id)
+            self.rpc.connect()
+            print("[DiscordRPC] Connected to Discord.")
+        except (InvalidID, DiscordNotFound) as e:
+            print(f"[DiscordRPC] Could not connect to Discord: {e}")
+            self.rpc = None
+
+    def clear_status(self):
+        try:
+            if self.rpc:
+                self.rpc.clear()
+                print("[DiscordRPC] Presence cleared.")
+        except Exception as e:
+            print(f"[DiscordRPC] Error clearing status: {e}")
+
+    def update_status(self, track_info, _retrying=False):
+        if self.rpc is None:
+            self.connect()
+            if self.rpc is None:
+                return
+            
         try:
             track_name = track_info["track_name"]
             track_url = track_info["track_url"]
@@ -29,8 +52,8 @@ class DiscordRPC:
             else:
                 album_name = "- " + album_name
 
+            buttons = [{"label": "View Repository", "url": "https://github.com/svxf/MusicPresence"}]
             if (is_playing):
-                buttons = [{"label": "View Repository", "url": "https://github.com/svxf/MusicPresence"}]
                 if track_url:
                     buttons.insert(0, {"label": "Listen on Spotify", "url": track_url})
 
@@ -55,5 +78,10 @@ class DiscordRPC:
                     small_text="Currently Paused",
                     buttons=buttons
                 )
+        except PipeClosed:
+            print("[DiscordRPC] Pipe was closed. Attempting to reconnect...")
+            self.connect()
+            if not _retrying:
+                self.update_status(track_info, _retrying=True)
         except Exception as e:
-            print(f"Error updating Discord Presence: {e}")
+            print(f"[DiscordRPC] Error updating Discord Presence: {e}")
